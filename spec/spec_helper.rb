@@ -8,5 +8,13 @@ require 'method_disabling'
 Dir["#{File.dirname(__FILE__)}/support/**/*.rb"].each {|f| require f}
 
 RSpec.configure do |config|
-  
+
+end
+
+def suppress_warnings
+  original_verbosity = $VERBOSE
+  $VERBOSE = nil
+  yield
+ensure
+  $VERBOSE = original_verbosity
 end
