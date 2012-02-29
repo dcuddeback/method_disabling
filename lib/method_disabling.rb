@@ -20,6 +20,19 @@ module MethodDisabling
   #   Foo.restore_method :bar
   #   Foo.new.bar               # => 42
   #
+  # @example Disabling a class method
+  #   class Foo
+  #     def self.bar
+  #       42
+  #     end
+  #   end
+  #
+  #   Foo.bar                         # => 42
+  #   Foo.disable_class_method :bar
+  #   Foo.bar                         # => NoMethodError: #<Class:Foo>#bar is disabled
+  #   Foo.restore_class_method :bar
+  #   Foo.bar                         # => 42
+  #
   module ClassMethods
 
     # Disables an instance method.
@@ -45,6 +58,21 @@ module MethodDisabling
       @disabled_methods ||= {}
     end
     private :disabled_methods
+
+    # Disables a class method.
+    #
+    # @param [Symbol,String]  method_name   The name of the method to disable.
+    # @param [String]         message       An error message. Defaults to "Class#method is disabled".
+    def disable_class_method(method_name, message = nil)
+      singleton_class.disable_method(method_name, message)
+    end
+
+    # Restores a previously disabled class method.
+    #
+    # @param [Symbol,String]  method_name   The name of the method to restore.
+    def restore_class_method(method_name)
+      singleton_class.restore_method(method_name)
+    end
 
   end
 

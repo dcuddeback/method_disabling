@@ -99,4 +99,99 @@ describe "MethodDisabling" do
     end
   end
 
+  describe "class methods" do
+    let(:klass) do
+      suppress_warnings do
+        ::TheClass = Class.new do
+          def self.the_method(*args, &block)
+            original_implementation(*args, &block)
+          end
+
+          def self.original_implementation(*args, &block)
+          end
+          private_class_method :original_implementation
+        end
+      end
+    end
+
+    let(:object) { klass }
+
+    context "untouched" do
+      it "should call the original implementation" do
+        object.should_receive(:original_implementation)
+        object.the_method
+      end
+    end
+
+    context "disabled" do
+      before do
+        klass.disable_class_method :the_method
+      end
+
+      it "should not call the original implementation" do
+        object.should_not_receive(:original_implementation)
+        object.the_method rescue nil
+      end
+
+      it "should raise NoMethodError with message '#<Class:TheClass>#the_method is disabled'" do
+        expect {
+          object.the_method
+        }.to raise_error(NoMethodError, "#<Class:TheClass>#the_method is disabled")
+      end
+    end
+
+    context "restored" do
+      before do
+        klass.disable_class_method :the_method
+        klass.restore_class_method :the_method
+      end
+
+      it "should call the original implementation" do
+        object.should_receive(:original_implementation)
+        object.the_method rescue nil
+      end
+
+      it "should pass through the method parameters" do
+        args = [:foo, 42]
+        object.should_receive(:original_implementation).with(*args)
+        object.the_method(*args) rescue nil
+      end
+
+      it "should pass through any block parameters" do
+        yielded   = nil
+        the_block = Proc.new { |*args| yielded = args }
+
+        object.should_receive(:original_implementation).and_yield(42)
+        object.the_method(&the_block)
+
+        yielded.should == [42]
+      end
+
+      it "should not raise an error" do
+        expect {
+          object.the_method
+        }.to_not raise_error
+      end
+    end
+
+    context "re-disabled" do
+      before do
+        klass.disable_class_method :the_method
+        klass.restore_class_method :the_method
+        klass.disable_class_method :the_method
+      end
+
+      it "should not call the original implementation" do
+        object.should_not_receive(:original_implementation)
+        object.the_method rescue nil
+      end
+
+      it "should raise NoMethodError with message '#<Class:TheClass>#the_method is disabled'" do
+        expect {
+          object.the_method
+        }.to raise_error(NoMethodError, "#<Class:TheClass>#the_method is disabled")
+      end
+    end
+  end
+
 end
