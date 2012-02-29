@@ -1,5 +1,96 @@
 require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 
+
+shared_examples "enabled method" do
+
+  it "should call the original implementation" do
+    object.should_receive(:original_implementation)
+    object.the_method rescue nil
+  end
+
+  it "should pass through the method parameters" do
+    args = [:foo, 42]
+    object.should_receive(:original_implementation).with(*args)
+    object.the_method(*args) rescue nil
+  end
+
+  it "should pass through any block parameters" do
+    yielded   = nil
+    the_block = Proc.new { |*args| yielded = args }
+
+    object.should_receive(:original_implementation).and_yield(42)
+    object.the_method(&the_block)
+
+    yielded.should == [42]
+  end
+
+  it "should return the original implementation's return value" do
+    return_value = rand
+    object.should_receive(:original_implementation).and_return(return_value)
+    object.the_method.should == return_value
+  end
+
+  it "should not raise an error" do
+    expect {
+      object.the_method
+    }.to_not raise_error
+  end
+
+end
+
+
+shared_examples "disabled method" do
+
+  it "should not call the original implementation" do
+    object.should_not_receive(:original_implementation)
+    object.the_method rescue nil
+  end
+
+  it "should raise NoMethodError with default message" do
+    expect {
+      object.the_method
+    }.to raise_error(NoMethodError, "#{klass_inspect}#the_method is disabled")
+  end
+
+end
+
+
+shared_examples "method disabling" do
+
+  context "untouched" do
+    it_should_behave_like "enabled method"
+  end
+
+  context "disabled" do
+    before do
+      klass.send(disabler, :the_method)
+    end
+
+    it_should_behave_like "disabled method"
+  end
+
+  context "restored" do
+    before do
+      klass.send(disabler, :the_method)
+      klass.send(restorer, :the_method)
+    end
+
+    it_should_behave_like "enabled method"
+  end
+
+  context "re-disabled" do
+    before do
+      klass.send(disabler, :the_method)
+      klass.send(restorer, :the_method)
+      klass.send(disabler, :the_method)
+    end
+
+    it_should_behave_like "disabled method"
+  end
+
+end
+
+
 describe "MethodDisabling" do
 
   describe "instance methods" do
@@ -19,84 +110,12 @@ describe "MethodDisabling" do
       end
     end
 
-    let(:object) { klass.new }
+    let(:object)        { klass.new }
+    let(:disabler)      { :disable_method }
+    let(:restorer)      { :restore_method }
+    let(:klass_inspect) { klass.inspect }
 
-    context "untouched" do
-      it "should call the original implementation" do
-        object.should_receive(:original_implementation)
-        object.the_method
-      end
-    end
-
-    context "disabled" do
-      before do
-        klass.disable_method :the_method
-      end
-
-      it "should not call the original implementation" do
-        object.should_not_receive(:original_implementation)
-        object.the_method rescue nil
-      end
-
-      it "should raise NoMethodError with message 'TheClass#the_method is disabled'" do
-        expect {
-          object.the_method
-        }.to raise_error(NoMethodError, "TheClass#the_method is disabled")
-      end
-    end
-
-    context "restored" do
-      before do
-        klass.disable_method :the_method
-        klass.restore_method :the_method
-      end
-
-      it "should call the original implementation" do
-        object.should_receive(:original_implementation)
-        object.the_method rescue nil
-      end
-
-      it "should pass through the method parameters" do
-        args = [:foo, 42]
-        object.should_receive(:original_implementation).with(*args)
-        object.the_method(*args) rescue nil
-      end
-
-      it "should pass through any block parameters" do
-        yielded   = nil
-        the_block = Proc.new { |*args| yielded = args }
-
-        object.should_receive(:original_implementation).and_yield(42)
-        object.the_method(&the_block)
-
-        yielded.should == [42]
-      end
-
-      it "should not raise an error" do
-        expect {
-          object.the_method
-        }.to_not raise_error
-      end
-    end
-
-    context "re-disabled" do
-      before do
-        klass.disable_method :the_method
-        klass.restore_method :the_method
-        klass.disable_method :the_method
-      end
-
-      it "should not call the original implementation" do
-        object.should_not_receive(:original_implementation)
-        object.the_method rescue nil
-      end
-
-      it "should raise NoMethodError with message 'TheClass#the_method is disabled'" do
-        expect {
-          object.the_method
-        }.to raise_error(NoMethodError, "TheClass#the_method is disabled")
-      end
-    end
+    include_examples "method disabling"
   end
 
   describe "class methods" do
@@ -114,84 +133,12 @@ describe "MethodDisabling" do
       end
     end
 
-    let(:object) { klass }
+    let(:object)        { klass }
+    let(:disabler)      { :disable_class_method }
+    let(:restorer)      { :restore_class_method }
+    let(:klass_inspect) { klass.singleton_class.inspect }
 
-    context "untouched" do
-      it "should call the original implementation" do
-        object.should_receive(:original_implementation)
-        object.the_method
-      end
-    end
-
-    context "disabled" do
-      before do
-        klass.disable_class_method :the_method
-      end
-
-      it "should not call the original implementation" do
-        object.should_not_receive(:original_implementation)
-        object.the_method rescue nil
-      end
-
-      it "should raise NoMethodError with message '#<Class:TheClass>#the_method is disabled'" do
-        expect {
-          object.the_method
-        }.to raise_error(NoMethodError, "#<Class:TheClass>#the_method is disabled")
-      end
-    end
-
-    context "restored" do
-      before do
-        klass.disable_class_method :the_method
-        klass.restore_class_method :the_method
-      end
-
-      it "should call the original implementation" do
-        object.should_receive(:original_implementation)
-        object.the_method rescue nil
-      end
-
-      it "should pass through the method parameters" do
-        args = [:foo, 42]
-        object.should_receive(:original_implementation).with(*args)
-        object.the_method(*args) rescue nil
-      end
-
-      it "should pass through any block parameters" do
-        yielded   = nil
-        the_block = Proc.new { |*args| yielded = args }
-
-        object.should_receive(:original_implementation).and_yield(42)
-        object.the_method(&the_block)
-
-        yielded.should == [42]
-      end
-
-      it "should not raise an error" do
-        expect {
-          object.the_method
-        }.to_not raise_error
-      end
-    end
-
-    context "re-disabled" do
-      before do
-        klass.disable_class_method :the_method
-        klass.restore_class_method :the_method
-        klass.disable_class_method :the_method
-      end
-
-      it "should not call the original implementation" do
-        object.should_not_receive(:original_implementation)
-        object.the_method rescue nil
-      end
-
-      it "should raise NoMethodError with message '#<Class:TheClass>#the_method is disabled'" do
-        expect {
-          object.the_method
-        }.to raise_error(NoMethodError, "#<Class:TheClass>#the_method is disabled")
-      end
-    end
+    include_examples "method disabling"
   end
 
 end
