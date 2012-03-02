@@ -1,9 +1,44 @@
 = method_disabling
 
-Description goes here.
+Allows disabling methods at runtime. It can be used to raise an error whenever a certain method is
+called from within your test suite to ensure the developers on your team don't accidentally write
+fragile tests. For example, you might want to disable access to a shared resource.
+
+== Getting Started
+
+Add +method_disabling+ to your Gemfile (probably under the +test+ group):
+
+  group :test do
+    gem "method_disabling"
+  end
+
+Use <tt>Module#disable_method</tt> and <tt>Module#disable_class_method</tt> to disable methods that
+you don't want called during your test suite. For example, to disable access to <tt>Net::HTTP</tt>:
+
+  # spec/spec_helper.rb
+  config.before do
+    Net::HTTP.disable_method :initialize
+  end
+
+When developers inadvertantly write unit tests that access the disabled method, they will see an error message:
+
+  NoMethodError: Net::HTTP#initialize is disabled
+
+You can set a custom error message by adding a second parameter to +disable_method+:
+
+  # spec/spec_helper.rb
+  config.before do
+    Net::HTTP.disable_method :initialize, "You were about to access an external resource. Please mock or stub instead."
+  end
+
+A disabled method can be restored to its original behavior with +restore_method+:
+
+  Net::HTTP.restore_method :initialize
+
+The same can be done for class methods with +disable_class_method+ and +restore_class_method+.
 
 == Contributing to method_disabling
- 
+
 * Check out the latest master to make sure the feature hasn't been implemented or the bug hasn't been fixed yet.
 * Check out the issue tracker to make sure someone already hasn't requested it and/or contributed it.
 * Fork the project.
