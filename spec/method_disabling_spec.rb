@@ -62,11 +62,27 @@ shared_examples "method disabling" do
   end
 
   context "disabled" do
-    before do
-      klass.send(disabler, :the_method)
+    context "with default message" do
+      before do
+        klass.send(disabler, :the_method)
+      end
+
+      it_should_behave_like "disabled method"
     end
 
-    it_should_behave_like "disabled method"
+    context "with custom message" do
+      let(:message) { "Custom Message" }
+
+      before do
+        klass.send(disabler, :the_method, message)
+      end
+
+      it "should raise NoMethodError with custom message" do
+        expect {
+          object.the_method
+        }.to raise_error(NoMethodError, message)
+      end
+    end
   end
 
   context "restored" do
@@ -79,13 +95,31 @@ shared_examples "method disabling" do
   end
 
   context "re-disabled" do
-    before do
-      klass.send(disabler, :the_method)
-      klass.send(restorer, :the_method)
-      klass.send(disabler, :the_method)
+    context "with default message" do
+      before do
+        klass.send(disabler, :the_method)
+        klass.send(restorer, :the_method)
+        klass.send(disabler, :the_method)
+      end
+
+      it_should_behave_like "disabled method"
     end
 
-    it_should_behave_like "disabled method"
+    context "with custom message" do
+      let(:message) { "Custom Message" }
+
+      before do
+        klass.send(disabler, :the_method, message)
+        klass.send(restorer, :the_method)
+        klass.send(disabler, :the_method)
+      end
+
+      it "should raise NoMethodError with custom message" do
+        expect {
+          object.the_method
+        }.to raise_error(NoMethodError, message)
+      end
+    end
   end
 
 end
