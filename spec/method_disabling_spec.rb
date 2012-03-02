@@ -170,7 +170,7 @@ describe "MethodDisabling" do
     let(:object)        { klass }
     let(:disabler)      { :disable_class_method }
     let(:restorer)      { :restore_class_method }
-    let(:klass_inspect) { klass.singleton_class.inspect }
+    let(:klass_inspect) { class << klass; inspect; end }
 
     include_examples "method disabling"
   end

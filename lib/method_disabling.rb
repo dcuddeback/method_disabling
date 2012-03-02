@@ -64,14 +64,14 @@ module MethodDisabling
     # @param [Symbol,String]  method_name   The name of the method to disable.
     # @param [String]         message       An error message. Defaults to "Class#method is disabled".
     def disable_class_method(method_name, message = nil)
-      singleton_class.disable_method(method_name, message)
+      (class << self; self; end).disable_method(method_name, message)
     end
 
     # Restores a previously disabled class method.
     #
     # @param [Symbol,String]  method_name   The name of the method to restore.
     def restore_class_method(method_name)
-      singleton_class.restore_method(method_name)
+      (class << self; self; end).restore_method(method_name)
     end
 
   end
