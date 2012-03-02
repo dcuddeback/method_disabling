@@ -37,6 +37,10 @@ A disabled method can be restored to its original behavior with +restore_method+
 
 The same can be done for class methods with +disable_class_method+ and +restore_class_method+.
 
+== Status {<img src="https://secure.travis-ci.org/dcuddeback/method_disabling.png" />}[http://travis-ci.org/dcuddeback/method_disabling]
+
++method_disabling+ is tested on Ruby 1.8.7, 1.9.2, 1.9.3, REE, Rubnius (1.8 and 1.9 mode), and JRuby (1.8 and 1.9 mode).
+
 == Contributing to method_disabling
 
 * Check out the latest master to make sure the feature hasn't been implemented or the bug hasn't been fixed yet.
